@@ -18,7 +18,20 @@ namespace SpreadSheets_v14
         {
             InitializeComponent();
             CreateGrid();
+            InitEntryCompleted();
 
+        }
+
+
+        private void CreateGrid()
+        {
+            AddColumnsAndColumnLabels();
+            AddRowsAndCellEntries();
+            InitializeVariables();
+        }
+
+        private void InitEntryCompleted()
+        {
             //press Enter to go to the next cell in a column
             foreach (var entry in grid.Children.OfType<Entry>())
             {
@@ -31,19 +44,13 @@ namespace SpreadSheets_v14
                         .OfType<Entry>()
                         .FirstOrDefault(e => Grid.GetRow(e) == (row + 1) &&
                         Grid.GetColumn(e) == col);
-                    CalculateButton_Clicked(s, e);
+                    if (content.StartsWith("="))
+                        CalculateButton_Clicked(entry, e);
                     nextEntry?.Focus();
                 };
 
 
             }
-        }
-
-        private void CreateGrid()
-        {
-            AddColumnsAndColumnLabels();
-            AddColumnsAndCellEntries();
-            InitializeVariables();
         }
 
         private void AddColumnsAndColumnLabels()
@@ -68,22 +75,22 @@ namespace SpreadSheets_v14
 
         }
 
-        private void AddColumnsAndCellEntries()
+        private void AddRowsAndCellEntries()
         {
-            for (int row = 0; row < CountRow; row++)
+            grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            for (int row = 1; row <= CountRow; row++)
             {
-                grid.RowDefinitions.Add(new RowDefinition());
+                grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
                 var label = new Label()
                 {
-                    Text = (row + 1).ToString(),
+                    Text = (row).ToString(),
                     VerticalOptions = LayoutOptions.Center,
                     HorizontalOptions = LayoutOptions.Center
                 };
-                Grid.SetRow(label, row + 1);
+                Grid.SetRow(label, row);
                 Grid.SetColumn(label, 0);
                 grid.Children.Add(label);
-
 
                 for (int col = 0; col < CountColumn; col++)
                 {
@@ -92,11 +99,12 @@ namespace SpreadSheets_v14
                         Text = "",
                         VerticalOptions = LayoutOptions.Center,
                         HorizontalOptions = LayoutOptions.Center,
-                        WidthRequest = 200
+                        WidthRequest = 200,
+                        HeightRequest = 50
                     };
                     entry.Unfocused += Entry_Unfocused;
                     entry.Focused += Entry_Focused;
-                    Grid.SetRow(entry, row + 1);
+                    Grid.SetRow(entry, row);
                     Grid.SetColumn(entry, col + 1);
                     grid.Children.Add(entry);
                 }
@@ -133,27 +141,31 @@ namespace SpreadSheets_v14
 
 
             // =... tap on the cell you want to use in the formula
-            if (entry.Text.StartsWith("=")) {
- 
-                    await Task.Delay(100);
-                    foreach (var anotherEntry in grid.Children.OfType<Entry>())
+            if (entry.Text.StartsWith("="))
+            {
+
+                await Task.Delay(100);
+                foreach (var anotherEntry in grid.Children.OfType<Entry>())
+                {
+                    if (anotherEntry.IsFocused && anotherEntry != entry)
                     {
-                        if (anotherEntry.IsFocused && anotherEntry != entry)
-                        {
-                            var anotherRow = Grid.GetRow(anotherEntry);
-                            var anotherCol = Grid.GetColumn(anotherEntry);
-                            entry.Text += (GetColumnName(anotherCol) + anotherRow).ToString();
-                            entry.Focus();
-                        }
+                        var anotherRow = Grid.GetRow(anotherEntry);
+                        var anotherCol = Grid.GetColumn(anotherEntry);
+                        entry.Text += (GetColumnName(anotherCol) + anotherRow).ToString();
+                        entry.Focus();
                     }
-                
+                }
+
             }
-            double value = double.TryParse(entry.Text, out value) ? value : 0;
-            CalculatorVisitor.tableIdentifier[(GetColumnName(col + 1) + (row + 1)).ToString()] = value;
+            else
+            {
+                double value = double.TryParse(entry.Text, out value) ? value : 0;
+                CalculatorVisitor.tableIdentifier[GetColumnName(col + 1) + (row + 1)] = value;
+            }
             entry.Unfocus();
         }
 
-        private void CalculateButton_Clicked(object sender, EventArgs e)
+        private async void CalculateButton_Clicked(object sender, EventArgs e)
         {
             foreach (var entry in grid.Children.OfType<Entry>())
             {
@@ -166,40 +178,41 @@ namespace SpreadSheets_v14
                         entry.Text = result.ToString();
                         var row = Grid.GetRow(entry);
                         var col = Grid.GetColumn(entry);
-                        CalculatorVisitor.tableIdentifier[row+GetColumnName(col)] = result;
+                        CalculatorVisitor.tableIdentifier[GetColumnName(col) + row] = result;
+                        return;
                     }
-                }
+                }//Specified argument was out of the range of valid values. (Parameter 'i')   at System.Text.RegularExpressions.ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument arg)
                 catch (Exception ex)
                 {
                     entry.Text = ex.Message;
+                    return;
                 }
-
             }
+            await DisplayAlert("Операція не може бути виконана.", "Вираз є константою.", "ОК");
         }
 
         private async void SaveButton_Clicked(object sender, EventArgs e)
         {
-            string[][] rows = new string[CountRow][];
-            int countRows = 0;
-            string[] cols = new string[CountColumn];
+            List<List<string>> SaveRows = new List<List<string>>();
+            List<string> cols = new List<string>();
             int countCols = 0;
             foreach (var entry in grid.Children.OfType<Entry>())
             {
-                if (countCols != 0 && countCols % CountColumn == 0)
+                if (countCols != 0 && countCols % (CountColumn - 1) == 0)
                 {
-                    rows[countRows] = cols;
-                    countRows++;
+                    SaveRows.Add(new List<string>(cols));
                     countCols = 0;
+                    cols.Clear();
                     continue;
                 }
                 else
                 {
-                    cols[countCols] = (entry.Text==null ? " " : entry.Text);
+                    cols.Add(entry.Text == null ? " " : entry.Text);
                     countCols++;
                 }
             }
-            SaveTable.DrawTable(rows);
-            await DisplayAlert("Увага!", "Ваша таблиця була збережена до папки проекту у файл table.txt", "ОК");
+            SaveTable.DrawTable(SaveRows.Select(l=>l.ToArray()).ToArray());
+            await DisplayAlert("", "Ваша таблиця була збережена до папки проекту у файл table.txt", "ОК");
         }
 
         private async void ExitButton_Clicked(object sender, EventArgs e)
@@ -238,7 +251,9 @@ namespace SpreadSheets_v14
                 {
                     Text = "",
                     VerticalOptions = LayoutOptions.Center,
-                    HorizontalOptions = LayoutOptions.Center
+                    HorizontalOptions = LayoutOptions.Center,
+                    WidthRequest = 200,
+                    HeightRequest = 50
                 };
 
                 entry.Unfocused += Entry_Unfocused;
@@ -248,6 +263,7 @@ namespace SpreadSheets_v14
                 grid.Children.Add(entry);
                 CountRow++;
             }
+            InitEntryCompleted();
         }
 
         private void DeleteRowButton_Clicked(Object sender, EventArgs e)
@@ -256,13 +272,36 @@ namespace SpreadSheets_v14
             {
                 int lastRowIndex = grid.RowDefinitions.Count - 1;
                 grid.RowDefinitions.RemoveAt(lastRowIndex);
-                grid.Children.RemoveAt(lastRowIndex * (CountColumn + 1));
-                for (int col = 0; col < CountColumn; col++)
+
+                // Create a list to hold the children to be removed
+                List<View> childrenToRemove = new List<View>();
+
+                // Add all children in the last row to the list
+                foreach (var child in grid.Children.OfType<Entry>())
                 {
-                    grid.Children.RemoveAt((lastRowIndex * CountColumn) + col + 1);
+                    if (Grid.GetRow(child) == lastRowIndex)
+                    {
+                        childrenToRemove.Add(child);
+                    }
+                }
+                // Remove the children from the grid
+                foreach (var child in childrenToRemove)
+                {
+                    grid.Children.Remove(child);
+                }
+
+                // Find and remove the label at the beginning of the row
+                foreach (var child in grid.Children)
+                {
+                    if (child is Label label && Grid.GetRow(label) == lastRowIndex && Grid.GetColumn(label) == 0)
+                    {
+                        grid.Children.Remove(label);
+                        break;
+                    }
                 }
             }
         }
+
 
         private void AddColumnButton_Clicked(Object sender, EventArgs e)
         {
@@ -286,7 +325,9 @@ namespace SpreadSheets_v14
                 {
                     Text = "",
                     VerticalOptions = LayoutOptions.Center,
-                    HorizontalOptions = LayoutOptions.Center
+                    HorizontalOptions = LayoutOptions.Center,
+                    WidthRequest = 200,
+                    HeightRequest = 50
                 };
                 entry.Unfocused += Entry_Unfocused;
                 Grid.SetRow(entry, row + 1);
@@ -294,27 +335,48 @@ namespace SpreadSheets_v14
                 grid.Children.Add(entry);
                 CountColumn++;
             }
+            InitEntryCompleted();
         }
 
         private void DeleteColumnButton_Clicked(Object sender, EventArgs e)
         {
-            if (grid.ColumnDefinitions.Count > 1)
+            if (grid.ColumnDefinitions.Count > 2)
             {
                 int lastColumnIndex = grid.ColumnDefinitions.Count - 1;
                 grid.ColumnDefinitions.RemoveAt(lastColumnIndex);
-                grid.Children.RemoveAt(lastColumnIndex);
-                for (int row = 0; row < CountColumn; row++)
+                // Create a list to hold the children to be removed
+                List<View> childrenToRemove = new List<View>();
+
+                // Add all children in the last row to the list
+                foreach (var child in grid.Children.OfType<Entry>())
                 {
-                    grid.Children.RemoveAt(row * (CountColumn + 1) + lastColumnIndex + 1);
+                    if (Grid.GetColumn(child) == lastColumnIndex)
+                    {
+                        childrenToRemove.Add(child);
+                    }
+                }
+                // Remove the children from the grid
+                foreach (var child in childrenToRemove)
+                {
+                    grid.Children.Remove(child);
+                }
+                // Find and remove the label at the top of the column
+                foreach (var child in grid.Children.OfType<Label>())
+                {
+                    if (Grid.GetColumn(child) == lastColumnIndex && Grid.GetRow(child) == 0)
+                    {
+                        grid.Children.Remove(child);
+                        break;
+                    }
                 }
             }
         }
 
         private void InitializeVariables()
         {
-            for(int row = 1; row <= CountRow; row++)
+            for (int row = 1; row <= CountRow; row++)
             {
-                for(int col = 1; col <= CountColumn; col++)
+                for (int col = 1; col <= CountColumn; col++)
                 {
                     CalculatorVisitor.tableIdentifier.Add((GetColumnName(col) + row), 0);
                 }

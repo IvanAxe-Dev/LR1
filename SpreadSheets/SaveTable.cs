@@ -10,7 +10,7 @@ namespace SpreadSheets_v14
             const int COLUMN_LENGTH = 20;
             const int NUMERATION_LENGTH = 5;
             int columns = rows[0].Length;
-            string path = "C:\\Users\\ivane\\VS projects\\SpreadSheetsV14\\table.txt";
+            string path = "C:\\Users\\ivane\\VS projects\\SpreadSheets14\\SpreadSheets\\table.txt";
 
             using (StreamWriter writer = new StreamWriter(path))
             {
@@ -47,9 +47,9 @@ namespace SpreadSheets_v14
                     + new String(' ', NUMERATION_LENGTH / 2 - 1));
                     foreach (string value in rows[i - 1])
                     {
-                        writer.Write("|" + new String(' ', (COLUMN_LENGTH - value.Length) / 2) + value
-                        + new String(' ', ((COLUMN_LENGTH - value.Length) % 2 != 0 ?
-                        (COLUMN_LENGTH - value.Length) / 2 : (COLUMN_LENGTH - value.Length) / 2 - 1)));
+                        int index = (COLUMN_LENGTH - value.Length) >= 0 ? COLUMN_LENGTH - value.Length : 0;
+                        writer.Write("|" + new String(' ', index / 2) + value.Substring(0, value.Length < COLUMN_LENGTH ? value.Length : COLUMN_LENGTH - 1)
+                        + new String(' ', index % 2 != 0 || index == 0 ? index / 2 : index / 2 - 1));
                     }
                     writer.Write("|\n");
                     // Draw divider

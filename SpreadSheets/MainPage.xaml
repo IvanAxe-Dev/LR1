@@ -29,7 +29,7 @@
 
         <Entry x:Name="textInput" Placeholder="Введіть текст" Grid.Row="1" Grid.ColumnSpan="2"/>
 
-        <ScrollView Grid.Row="2" Grid.ColumnSpan="2" Orientation="Both">
+        <ScrollView Grid.Row="2" Grid.ColumnSpan="2" Orientation="Both" HeightRequest="500">
             <Grid x:Name="grid" />
         </ScrollView>
 

@@ -5,7 +5,7 @@
 compileUnit : expression EOF;
 
 expression :
-	operatorToken=(MOD | DIV) LPAREN expression ',' expression RPAREN #ParenthesizedExpr
+	operatorToken=(MOD | DIV) LPAREN expression COMMA expression RPAREN #ParenthesizedExpr
 	| operatorToken=(INC | DEC) LPAREN expression RPAREN #ParenthesizedExprOneArg
 	| expression EXPONENT expression #ExponentialExpr
     | expression operatorToken=(MULTIPLY | DIVIDE) expression #MultiplicativeExpr
@@ -19,7 +19,13 @@ expression :
  */
 
 NUMBER : INT ('.' INT)?; 
-IDENTIFIER : [a-zA-Z]+[1-9][0-9]*;
+
+MOD : 'mod' | 'MOD';
+DIV : 'div' | 'DIV';
+INC : 'inc' | 'INC';
+DEC : 'dec' | 'DEC';
+
+IDENTIFIER : [a-zA-Z]+[0-9]+;
 
 INT : ('0'..'9')+;
 
@@ -30,9 +36,6 @@ SUBTRACT : '-';
 ADD : '+';
 LPAREN : '(';
 RPAREN : ')';
-MOD : 'mod';
-DIV : 'div';
-INC : 'inc';
-DEC : 'dec';
+COMMA : ',';
 
 WS : [ \t\r\n] -> channel(HIDDEN);

@@ -18,6 +18,7 @@ namespace Calculator
 
             var tokens = new CommonTokenStream(lexer);
             var parser = new CalculatorParser(tokens);
+            parser.AddErrorListener(new ThrowExceptionErrorListener());
 
             var tree = parser.compileUnit();
 
