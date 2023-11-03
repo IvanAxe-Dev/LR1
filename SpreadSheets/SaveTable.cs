@@ -41,11 +41,11 @@ namespace SpreadSheets_v14
                 writer.WriteLine(new String('-', columns * (COLUMN_LENGTH) + NUMERATION_LENGTH + 2));
 
                 // Draw rows
-                for (int i = 1; i < rows.Length - 2; i++)
+                for (int i = 1; i < rows.Length; i++)
                 {
                     writer.Write("|" + new String(' ', NUMERATION_LENGTH / 2 - 1) + i
                     + new String(' ', NUMERATION_LENGTH / 2 - 1));
-                    foreach (string value in rows[i - 1])
+                    foreach (string value in rows[i])
                     {
                         int index = (COLUMN_LENGTH - value.Length) >= 0 ? COLUMN_LENGTH - value.Length : 0;
                         writer.Write("|" + new String(' ', index / 2) + value.Substring(0, value.Length < COLUMN_LENGTH ? value.Length : COLUMN_LENGTH - 1)

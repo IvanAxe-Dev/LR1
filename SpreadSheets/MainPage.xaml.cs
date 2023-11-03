@@ -198,7 +198,7 @@ namespace SpreadSheets_v14
             int countCols = 0;
             foreach (var entry in grid.Children.OfType<Entry>())
             {
-                if (countCols != 0 && countCols % (CountColumn - 1) == 0)
+                if (countCols != 0 && countCols % CountColumn == 0)
                 {
                     SaveRows.Add(new List<string>(cols));
                     countCols = 0;
@@ -261,8 +261,8 @@ namespace SpreadSheets_v14
                 Grid.SetRow(entry, newRow);
                 Grid.SetColumn(entry, col + 1);
                 grid.Children.Add(entry);
-                CountRow++;
             }
+            CountRow++;
             InitEntryCompleted();
         }
 
@@ -333,8 +333,8 @@ namespace SpreadSheets_v14
                 Grid.SetRow(entry, row + 1);
                 Grid.SetColumn(entry, newColumn);
                 grid.Children.Add(entry);
-                CountColumn++;
             }
+            CountColumn++;
             InitEntryCompleted();
         }
 
